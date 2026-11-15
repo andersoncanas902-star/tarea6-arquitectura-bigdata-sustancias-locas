@@ -2,9 +2,6 @@
 -- Base de datos "monitoreo-produccion"
 -- Tarea 6 - Unidad 3 - Caso de estudio "Sustancias Locas"
 -- ET0155 Fundamentos de Big Data - G102
--- NOTA: Este script fue diseñado y revisado, pero por falta de
--- tiempo no se alcanzó a ejecutar y verificar en pgAdmin antes
--- de la entrega. Queda pendiente correrlo y poblarlo.
 -- ============================================================
 
 -- Activamos PostGIS para poder guardar latitud/longitud como un punto geográfico real.
