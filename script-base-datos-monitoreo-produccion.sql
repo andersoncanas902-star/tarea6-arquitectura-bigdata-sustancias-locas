@@ -173,17 +173,25 @@ INSERT INTO clasificacion_ppm (nivel, ppm_min, ppm_max, accion) VALUES
  ('Crítico',    10.001, 999.999,'Detener fábrica, llamar bomberos/defensa civil');
 
 -- Muestra representativa de lecturas (no el volumen real diario, solo para probar la estructura)
+-- NOTA: se usa un CTE (WITH) para que random() se calcule UNA VEZ POR FILA.
+-- Una versión anterior con "CROSS JOIN LATERAL (SELECT random()...)" tenía un error:
+-- al no depender de ninguna columna de las tablas externas, PostgreSQL evaluaba el
+-- random() una sola vez para toda la consulta y repetía el mismo valor en las 720 filas.
+WITH base AS (
+    SELECT
+        s.id_sensor,
+        CURRENT_DATE AS fecha,
+        (CURRENT_TIME - (random()*8*3600)::int * interval '1 second')::time AS hora, -- hora simulada
+        round((random()*12)::numeric,3) AS ppm                                        -- ppm aleatorio entre 0 y 12, una vez por fila
+    FROM sensores s
+    CROSS JOIN generate_series(1,3) AS i -- 3 lecturas de muestra por sensor
+)
 INSERT INTO lecturas (id_sensor, fecha, hora, ppm_benceno, id_clasificacion)
 SELECT
-    s.id_sensor,
-    CURRENT_DATE,
-    (CURRENT_TIME - (random()*8*3600)::int * interval '1 second')::time, -- hora simulada
-    v.ppm,                                                                -- valor simulado de ppm
+    b.id_sensor, b.fecha, b.hora, b.ppm,
     (SELECT c.id_clasificacion FROM clasificacion_ppm c
-     WHERE v.ppm BETWEEN c.ppm_min AND c.ppm_max LIMIT 1)                 -- clasificación según el ppm real
-FROM sensores s
-CROSS JOIN generate_series(1,3) AS i                 -- 3 lecturas de muestra por sensor
-CROSS JOIN LATERAL (SELECT round((random()*12)::numeric,3) AS ppm) AS v; -- ppm aleatorio entre 0 y 12
+     WHERE b.ppm BETWEEN c.ppm_min AND c.ppm_max LIMIT 1) -- clasificación según el ppm real de esa fila
+FROM base b;
 
 -- Verificación rápida (correr después de los inserts)
 SELECT
